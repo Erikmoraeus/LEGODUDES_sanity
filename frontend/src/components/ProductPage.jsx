@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import {Link, useParams} from 'react-router-dom'
-import { fetchProductBySlug } from '../../sanity/services/productServices'
+import { fetchProductBySlug, updateReview } from '../../sanity/services/productServices'
 
 export default function ProductPage() {
     //states for å lagre skjemainformasjon
     const [reviewer, setReviewer] = useState("")
     const [comment, setComment] = useState("")
     const [rating, setRating] = useState(0)
+    const [formMessage, setFormMessage] = useState("")
 
     //handleChange-funksjoner for felter
     const handleReviewerChange = (e) => {
@@ -19,8 +20,24 @@ export default function ProductPage() {
     }
     const handleRatingChange = (e) => {
         e.preventDefault()
-        setRating(e.target.value)
+        setRating(Number(e.target.value))
     }
+    //handleSubmit founksjon for når en bruker sender en anmeldelse
+    const handleSubmit = async (e) => {
+        e.preventDefault()
+        if(rating === 0) {
+            setFormMessage("Du må sette en vurdering")
+        } else {
+            const result = await updateReview(product._id, reviewer, comment, rating)
+            if( result == "Din annmeldelse er registrert!") {
+                setFormMessage("Din annmeldelse er lagt til")
+                product.reviews.push({reviewer: reviewer, comment: comment, rating: rating})
+            } else { 
+                setFormMessage(result)
+            }
+        }
+    }
+
 
     const {slug} = useParams()
     const [product, setProduct] = useState(null)
@@ -62,7 +79,8 @@ export default function ProductPage() {
                         </p>
                         <p>
                             <label htmlFor="rating">Vurdering</label><br />
-                            <select name="rating" onChange={handleRatingChange} id="rating">
+                            <select name="rating"  required onChange={handleRatingChange} id="rating">
+                                <option value="">Velg din vurdering</option>
                                 <option value="1">1</option>
                                 <option value="2">2</option>
                                 <option value="3">3</option>
@@ -70,12 +88,13 @@ export default function ProductPage() {
                                 <option value="5">5</option>
                             </select>
                         </p>
+                        <p id="formessage">{formMessage}</p>
                         <p>
-                            <button>Send inn anmeldelse</button>
+                            <button  onClick={handleSubmit}>Send inn anmeldelse</button>
                         </p>
                     </form>
                     {
-                        product?.reviews.map((r, i) => <p key={i}>
+                        product?.reviews?.map((r, i) => <p key={i}>
                             <strong>{r.reviewer}</strong>< br />
                             {r.comment}<br />
                             Vurdering: {r.rating}
